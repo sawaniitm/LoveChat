@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="/favicon.ico">
+
+
+
+  <title>LoveChat — Valentine's Day Secret Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --rose:    #FF3366;
+      --blush:   #FF6B8A;
+      --cream:   #FFF0F3;
+      --gold:    #FFB347;
+      --deep:    #1A0A10;
+      --wine:    #8B1A3A;
+      --soft:    #FFE4EC;
+      --text:    #2D0A18;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      position: fixed;
+      width: 20px; height: 20px;
+      background: var(--rose);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease, width 0.2s, height 0.2s, background 0.2s;
+      mix-blend-mode: multiply;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 40px; height: 40px;
+      border: 2px solid var(--rose);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.15s ease, width 0.3s, height 0.3s, border-color 0.2s;
+      opacity: 0.5;
+    }
+
+    /* Floating hearts bg */
+    .hearts-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .heart-float {
+      position: absolute;
+      bottom: -60px;
+      font-size: clamp(14px, 2vw, 24px);
+      animation: floatUp linear infinite;
+      opacity: 0;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.4; }
+      100% { transform: translateY(-110vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 48px;
+      background: rgba(255,240,243,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,51,102,0.1);
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--rose);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-logo span { font-size: 26px; }
+    .nav-links { display: flex; gap: 32px; align-items: center; }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0.7;
+      transition: opacity 0.2s, color 0.2s;
+    }
+    .nav-links a:hover { opacity: 1; color: var(--rose); }
+    .btn-nav {
+      background: var(--rose);
+      color: #fff !important;
+      padding: 10px 24px;
+      border-radius: 50px;
+      opacity: 1 !important;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      transition: transform 0.2s, box-shadow 0.2s !important;
+      box-shadow: 0 4px 20px rgba(255,51,102,0.35);
+    }
+    .btn-nav:hover { transform: translateY(-2px) !important; box-shadow: 0 8px 30px rgba(255,51,102,0.45) !important; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,51,102,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 20% 80%, rgba(255,107,138,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 30% at 80% 60%, rgba(255,179,71,0.06) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,51,102,0.1);
+      border: 1px solid rgba(255,51,102,0.2);
+      border-radius: 50px;
+      padding: 8px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--rose);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeSlideDown 0.8s ease both;
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 700;
+      line-height: 1.05;
+      margin-bottom: 24px;
+      animation: fadeSlideDown 0.9s 0.1s ease both;
+    }
+    .hero-title em {
+      font-style: italic;
+      color: var(--rose);
+      position: relative;
+    }
+    .hero-title em::after {
+      content: '';
+      position: absolute;
+      bottom: 4px; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--rose), var(--gold));
+      border-radius: 2px;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2.5vw, 20px);
+      opacity: 0.65;
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+      animation: fadeSlideDown 0.9s 0.2s ease both;
+    }
+    .hero-cta {
+      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+      animation: fadeSlideDown 0.9s 0.3s ease both;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--rose), #FF1744);
+      color: #fff;
+      border: none;
+      padding: 18px 40px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: none;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 40px rgba(255,51,102,0.45), 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.25s, box-shadow 0.25s;
+      text-decoration: none;
+    }
+    .btn-primary:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 16px 50px rgba(255,51,102,0.55), 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-secondary {
+      background: rgba(255,51,102,0.08);
+      border: 1.5px solid rgba(255,51,102,0.25);
+      color: var(--rose);
+      padding: 17px 36px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: none;
+      display: flex; align-items: center; gap: 8px;
+      transition: background 0.25s, border-color 0.25s, transform 0.25s;
+      text-decoration: none;
+    }
+    .btn-secondary:hover { background: rgba(255,51,102,0.12); border-color: var(--rose); transform: translateY(-2px); }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: flex; gap: 0; justify-content: center;
+      margin-top: 72px;
+      animation: fadeSlideDown 0.9s 0.5s ease both;
+    }
+    .stat-item {
+      padding: 24px 48px;
+      border-right: 1px solid rgba(255,51,102,0.12);
+      text-align: center;
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--rose);
+      display: block;
+    }
+    .stat-label { font-size: 12px; opacity: 0.55; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* SCROLL INDICATOR */
+    .scroll-hint {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      opacity: 0.4;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      animation: bounce 2s infinite;
+    }
+    @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+    /* HOW IT WORKS */
+    .section {
+      padding: 100px 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .section-title em { font-style: italic; color: var(--rose); }
+    .section-sub {
+      text-align: center;
+      opacity: 0.55;
+      font-size: 17px;
+      margin-bottom: 64px;
+      line-height: 1.6;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+    }
+    .step-card {
+      background: #fff;
+      border: 1px solid rgba(255,51,102,0.08);
+      border-radius: 24px;
+      padding: 40px 32px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    }
+    .step-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--rose), var(--gold));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+    .step-card:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(255,51,102,0.12); border-color: rgba(255,51,102,0.2); }
+    .step-card:hover::before { transform: scaleX(1); }
+    .step-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 72px;
+      font-weight: 700;
+      color: rgba(255,51,102,0.08);
+      line-height: 1;
+      position: absolute;
+      top: 16px; right: 24px;
+    }
+    .step-icon {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, rgba(255,51,102,0.12), rgba(255,107,138,0.08));
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      margin-bottom: 20px;
+    }
+    .step-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    .step-card p { opacity: 0.6; line-height: 1.65; font-size: 15px; }
+
+    /* FEATURES */
+    .features-section {
+      background: var(--deep);
+      padding: 100px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .features-section::before {
+      content: '';
+      position: absolute;
+      top: -200px; left: 50%;
+      transform: translateX(-50%);
+      width: 800px; height: 400px;
+      background: radial-gradient(ellipse, rgba(255,51,102,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .features-inner { max-width: 1200px; margin: 0 auto; }
+    .features-section .section-title { color: #fff; }
+    .features-section .section-sub { color: rgba(255,255,255,0.45); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+    }
+    .feat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 32px 28px;
+      transition: background 0.3s, border-color 0.3s, transform 0.3s;
+    }
+    .feat-card:hover { background: rgba(255,51,102,0.08); border-color: rgba(255,51,102,0.3); transform: translateY(-4px); }
+    .feat-icon { font-size: 32px; margin-bottom: 16px; display: block; }
+    .feat-card h4 { color: #fff; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .feat-card p { color: rgba(255,255,255,0.45); font-size: 14px; line-height: 1.6; }
+
+    /* CHAT PREVIEW MOCKUP */
+    .preview-section { padding: 100px 24px; }
+    .preview-inner { max-width: 900px; margin: 0 auto; }
+    .phone-mockup {
+      background: var(--deep);
+      border-radius: 40px;
+      padding: 20px;
+      box-shadow: 0 60px 120px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05);
+      max-width: 420px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .phone-notch {
+      width: 120px; height: 28px;
+      background: #000;
+      border-radius: 20px;
+      margin: 0 auto 16px;
+    }
+    .phone-screen {
+      background: #0D0010;
+      border-radius: 28px;
+      overflow: hidden;
+    }
+    .mockup-header {
+      background: rgba(255,51,102,0.12);
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid rgba(255,51,102,0.1);
+    }
+    .mockup-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--rose), var(--gold));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .mockup-info { flex: 1; }
+    .mockup-name { color: #fff; font-size: 15px; font-weight: 600; }
+    .mockup-status { color: #4ADE80; font-size: 11px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+    .mockup-status::before { content: ''; width: 6px; height: 6px; background: #4ADE80; border-radius: 50%; }
+    .mockup-msgs { padding: 20px 16px; display: flex; flex-direction: column; gap: 12px; min-height: 240px; }
+    .mockup-msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      line-height: 1.5;
+      animation: msgPop 0.4s ease both;
+    }
+    @keyframes msgPop { from{opacity:0;transform:scale(0.8) translateY(8px)} to{opacity:1;transform:none} }
+    .msg-in { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg-out { background: linear-gradient(135deg, var(--rose), #FF1744); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-time { font-size: 10px; opacity: 0.5; margin-top: 4px; text-align: right; }
+    .mockup-input {
+      padding: 12px 16px;
+      background: rgba(255,255,255,0.04);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex; gap: 10px; align-items: center;
+    }
+    .mockup-input-field {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 10px 16px;
+      color: rgba(255,255,255,0.5);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .mockup-send {
+      width: 38px; height: 38px;
+      background: var(--rose);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* CREATE ROOM MODAL / SECTION */
+    .create-section {
+      background: linear-gradient(135deg, rgba(255,51,102,0.06), rgba(255,179,71,0.04));
+      border-top: 1px solid rgba(255,51,102,0.08);
+      border-bottom: 1px solid rgba(255,51,102,0.08);
+      padding: 80px 24px;
+    }
+    .create-card {
+      max-width: 540px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 32px;
+      padding: 48px 40px;
+      box-shadow: 0 32px 80px rgba(255,51,102,0.12);
+      border: 1px solid rgba(255,51,102,0.1);
+      text-align: center;
+    }
+    .create-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    .create-card p { opacity: 0.6; font-size: 15px; margin-bottom: 32px; line-height: 1.6; }
+    .input-group { position: relative; margin-bottom: 16px; }
+    .input-field {
+      width: 100%;
+      padding: 16px 20px;
+      border: 1.5px solid rgba(255,51,102,0.15);
+      border-radius: 14px;
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background: var(--cream);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-field:focus { border-color: var(--rose); box-shadow: 0 0 0 4px rgba(255,51,102,0.1); }
+    .input-field::placeholder { opacity: 0.45; }
+    .avatar-picker {
+      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .av-btn {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      border: 2.5px solid transparent;
+      background: var(--soft);
+      font-size: 24px;
+      cursor: none;
+      transition: border-color 0.2s, transform 0.2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .av-btn:hover, .av-btn.active { border-color: var(--rose); transform: scale(1.1); }
+    .link-box {
+      display: none;
+      background: var(--soft);
+      border: 1.5px solid rgba(255,51,102,0.2);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-top: 20px;
+      text-align: left;
+    }
+    .link-box.show { display: block; }
+    .link-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--rose); font-weight: 600; margin-bottom: 8px; }
+    .link-url { font-size: 14px; color: var(--text); word-break: break-all; font-family: monospace; opacity: 0.75; }
+    .link-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .btn-small {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: none;
+      border: none;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+    .btn-small:hover { transform: translateY(-1px); opacity: 0.9; }
+    .btn-copy { background: var(--rose); color: #fff; }
+    .btn-go { background: var(--text); color: #fff; }
+
+    /* TESTIMONIALS */
+    .testi-section { padding: 100px 24px; }
+    .testi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 1000px; margin: 0 auto; }
+    .testi-card {
+      background: #fff;
+      border: 1px solid rgba(255,51,102,0.08);
+      border-radius: 24px;
+      padding: 32px 28px;
+      position: relative;
+    }
+    .testi-quote {
+      font-family: 'Playfair Display', serif;
+      font-size: 60px;
+      color: rgba(255,51,102,0.15);
+      line-height: 0.8;
+      margin-bottom: 16px;
+    }
+    .testi-text { font-size: 15px; line-height: 1.7; opacity: 0.75; margin-bottom: 20px; }
+    .testi-author { display: flex; align-items: center; gap: 12px; }
+    .testi-av { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--blush), var(--gold)); display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .testi-name { font-weight: 600; font-size: 14px; }
+    .testi-date { font-size: 12px; opacity: 0.45; }
+    .stars { color: var(--gold); font-size: 13px; margin-bottom: 4px; }
+
+    /* FOOTER */
+    footer {
+      background: var(--deep);
+      color: rgba(255,255,255,0.5);
+      padding: 60px 48px 40px;
+    }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 40px; margin-bottom: 48px; }
+    .footer-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .footer-desc { font-size: 14px; opacity: 0.5; margin-top: 8px; max-width: 260px; line-height: 1.6; }
+    .footer-links h4 { color: #fff; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .footer-links a { display: block; font-size: 14px; opacity: 0.5; text-decoration: none; margin-bottom: 10px; color: #fff; transition: opacity 0.2s; }
+    .footer-links a:hover { opacity: 0.9; }
+    .footer-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .footer-bottom p { font-size: 13px; }
+    .heart-beat { display: inline-block; animation: heartbeat 1.2s ease infinite; }
+    @keyframes heartbeat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
+
+    /* ANIMATIONS */
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      .nav-links .hide-mobile { display: none; }
+      .stat-item { padding: 20px 24px; }
+      .stats-bar { flex-wrap: wrap; }
+      .create-card { padding: 36px 24px; }
+      body { cursor: auto; }
+      .cursor, .cursor-ring { display: none; }
+      .footer-top { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Custom Cursor -->
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- Floating Hearts Background -->
+  <div class="hearts-bg" id="heartsBg"></div>
+
+  <!-- Navigation -->
+  <nav>
+    <div class="nav-logo">
+      <span>💝</span>
+      LoveChat
+    </div>
+    <div class="nav-links">
+      <a href="#how-it-works" class="hide-mobile">How it works</a>
+      <a href="#features" class="hide-mobile">Features</a>
+      <a href="#create" class="btn-nav">Start Chatting →</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-tag">💕 Valentine's Day Special · 2026</div>
+    <h1 class="hero-title">
+      Share a <em>Secret Moment</em><br>This Valentine's
+    </h1>
+    <p class="hero-sub">
+      Private, real-time 1-on-1 chats that disappear after your conversation.
+      Create a link, share it with your special someone, and start chatting.
+    </p>
+    <div class="hero-cta">
+      <a href="#create" class="btn-primary">
+        💝 Create Private Chat
+      </a>
+      <a href="#how-it-works" class="btn-secondary">
+        ✨ See How It Works
+      </a>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-num">100%</span>
+        <span class="stat-label">Private</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">1:1</span>
+        <span class="stat-label">Only You Two</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">Live</span>
+        <span class="stat-label">Real-Time</span>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <svg width="16" height="24" viewBox="0 0 16 24" fill="none"><rect x="1" y="1" width="14" height="22" rx="7" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2.5" fill="currentColor"><animate attributeName="cy" values="8;14;8" dur="1.5s" repeatCount="indefinite"/></circle></svg>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" id="how-it-works">
+    <h2 class="section-title reveal">How It <em>Works</em></h2>
+    <p class="section-sub reveal">Three simple steps to your secret Valentine's chat</p>
+    <div class="steps-grid">
+      <div class="step-card reveal">
+        <span class="step-num">01</span>
+        <div class="step-icon">💝</div>
+        <h3>Enter Your Name</h3>
+        <p>Pick a cute nickname and choose your avatar emoji to represent yourself in the chat.</p>
+      </div>
+      <div class="step-card reveal">
+        <span class="step-num">02</span>
+        <div class="step-icon">🔗</div>
+        <h3>Get a Private Link</h3>
+        <p>A unique, one-time link is generated just for your private room. Share it only with your Valentine.</p>
+      </div>
+      <div class="step-card reveal">
+        <span class="step-num">03</span>
+        <div class="step-icon">💬</div>
+        <h3>Chat in Real Time</h3>
+        <p>When they click your link, the chat begins instantly. Only the two of you — no one else can join.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section" id="features">
+    <div class="features-inner">
+      <h2 class="section-title reveal">Everything You <em>Need</em></h2>
+      <p class="section-sub reveal">Built with love for the most special day of the year</p>
+      <div class="features-grid">
+        <div class="feat-card reveal">
+          <span class="feat-icon">🔒</span>
+          <h4>Private 1-to-1 Rooms</h4>
+          <p>Each link creates an exclusive room. A third person can never join your conversation.</p>
+        </div>
+        <div class="feat-card reveal">
+          <span class="feat-icon">⚡</span>
+          <h4>Real-Time Messaging</h4>
+          <p>Messages delivered instantly using WebSocket technology. Zero lag.</p>
+        </div>
+        <div class="feat-card reveal">
+          <span class="feat-icon">✍️</span>
+          <h4>Typing Indicators</h4>
+          <p>See when your partner is composing a message with a live animated indicator.</p>
+        </div>
+        <div class="feat-card reveal">
+          <span class="feat-icon">✅</span>
+          <h4>Read Receipts</h4>
+          <p>Double checkmarks appear when your message has been seen by your partner.</p>
+        </div>
+        <div class="feat-card reveal">
+          <span class="feat-icon">🔔</span>
+          <h4>Sound Notifications</h4>
+          <p>Gentle chime when a new message arrives so you never miss a word.</p>
+        </div>
+        <div class="feat-card reveal">
+          <span class="feat-icon">📱</span>
+          <h4>Mobile Friendly</h4>
+          <p>Looks and feels perfect on any device — phone, tablet, or desktop.</p>
+        </div>
+        <div class="feat-card reveal">
+          <span class="feat-icon">🌐</span>
+          <h4>Online Presence</h4>
+          <p>See when your partner is online with a live indicator in the header.</p>
+        </div>
+        <div class="feat-card reveal">
+          <span class="feat-icon">🕒</span>
+          <h4>Timestamps</h4>
+          <p>Every message shows a precise time so your conversation has a beautiful timeline.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Chat Preview -->
+  <section class="preview-section reveal">
+    <div class="preview-inner">
+      <h2 class="section-title" style="margin-bottom:16px">A Glimpse of the <em>Magic</em></h2>
+      <p class="section-sub" style="margin-bottom:48px">Clean, beautiful, WhatsApp-inspired chat experience</p>
+      <div class="phone-mockup">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="mockup-header">
+            <div class="mockup-avatar">🌹</div>
+            <div class="mockup-info">
+              <div class="mockup-name">My Valentine</div>
+              <div class="mockup-status">Online</div>
+            </div>
+            <span style="color:rgba(255,255,255,0.5); font-size:20px;">❤️</span>
+          </div>
+          <div class="mockup-msgs" id="mockupMsgs"></div>
+          <div class="mockup-input">
+            <div class="mockup-input-field">Type a message...</div>
+            <div class="mockup-send">💝</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Create Room -->
+  <section class="create-section" id="create">
+    <div class="create-card">
+      <div style="font-size:48px;margin-bottom:16px">💝</div>
+      <h2>Start Your Chat</h2>
+      <p>Create a private room in seconds and share the link with your special someone.</p>
+
+      <div class="input-group">
+        <input class="input-field" id="userName" placeholder="Your name or nickname..." maxlength="20" />
+      </div>
+
+      <div class="avatar-picker" id="avatarPicker"></div>
+
+      <button class="btn-primary" style="width:100%;justify-content:center;" id="createBtn">
+        💝 Create My Chat Room
+      </button>
+
+      <div class="link-box" id="linkBox">
+        <div class="link-label">Your Private Link</div>
+        <div class="link-url" id="linkUrl"></div>
+        <div class="link-actions">
+          <button class="btn-small btn-copy" id="copyBtn">📋 Copy Link</button>
+          <button class="btn-small btn-go" id="goBtn">Go to Chat →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="testi-section">
+    <h2 class="section-title reveal">Love <em>Stories</em></h2>
+    <p class="section-sub reveal">What our couples are saying</p>
+    <div class="testi-grid">
+      <div class="testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <div class="testi-quote">"</div>
+        <p class="testi-text">We used LoveChat for the first time last Valentine's Day and it was the most romantic thing we've ever done digitally. The typing indicator made my heart skip!</p>
+        <div class="testi-author">
+          <div class="testi-av">🌸</div>
+          <div>
+            <div class="testi-name">Priya & Arjun</div>
+            <div class="testi-date">February 14, 2024</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <div class="testi-quote">"</div>
+        <p class="testi-text">Long-distance relationships are hard, but this made our Valentine's Day special. The private link meant only we could share this moment together.</p>
+        <div class="testi-author">
+          <div class="testi-av">🦋</div>
+          <div>
+            <div class="testi-name">Sofia & Marco</div>
+            <div class="testi-date">February 14, 2024</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card reveal">
+        <div class="stars">★★★★★</div>
+        <div class="testi-quote">"</div>
+        <p class="testi-text">Simple, beautiful and exactly what I needed to surprise my girlfriend. She loved it! The animations and the read receipts are such a nice touch.</p>
+        <div class="testi-author">
+          <div class="testi-av">🌺</div>
+          <div>
+            <div class="testi-name">James & Emily</div>
+            <div class="testi-date">February 14, 2024</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div>
+          <div class="footer-logo">💝 LoveChat</div>
+          <p class="footer-desc">Private real-time chats crafted for couples on Valentine's Day. Made with love.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Product</h4>
+          <a href="#how-it-works">How it Works</a>
+          <a href="#features">Features</a>
+          <a href="#create">Start Chatting</a>
+        </div>
+        <div class="footer-links">
+          <h4>Info</h4>
+          <a href="#">Privacy</a>
+          <a href="#">Security</a>
+          <a href="#">FAQ</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 LoveChat. Made with <span class="heart-beat">❤️</span> for Valentine's Day</p>
+        <p style="font-size:20px;">💝 🌹 💕 🌸</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Custom cursor
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    document.addEventListener('mousemove', e => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+      setTimeout(() => {
+        ring.style.left = e.clientX + 'px';
+        ring.style.top = e.clientY + 'px';
+      }, 80);
+    });
+    document.querySelectorAll('a,button,.av-btn').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width = '30px'; cursor.style.height = '30px';
+        ring.style.width = '60px'; ring.style.height = '60px';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width = '20px'; cursor.style.height = '20px';
+        ring.style.width = '40px'; ring.style.height = '40px';
+      });
+    });
+
+    // Floating hearts
+    const heartsBg = document.getElementById('heartsBg');
+    const heartEmojis = ['❤️','💕','💖','💗','💓','🌹','💝','💞','🌸','✨','💫'];
+    function spawnHeart() {
+      const h = document.createElement('div');
+      h.className = 'heart-float';
+      h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
+      h.style.left = Math.random() * 100 + 'vw';
+      h.style.animationDuration = (8 + Math.random() * 12) + 's';
+      h.style.animationDelay = Math.random() * 4 + 's';
+      h.style.fontSize = (12 + Math.random() * 20) + 'px';
+      heartsBg.appendChild(h);
+      setTimeout(() => h.remove(), 20000);
+    }
+    setInterval(spawnHeart, 800);
+    for (let i = 0; i < 8; i++) setTimeout(spawnHeart, i * 200);
+
+    // Scroll reveal
+    const revealEls = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+    }, { threshold: 0.12 });
+    revealEls.forEach(el => observer.observe(el));
+
+    // Avatar picker
+    const avatars = ['🥰','💝','🌹','🦋','🌸','🐰','💫','🌺','✨','🎀'];
+    let selectedAvatar = '🥰';
+    const picker = document.getElementById('avatarPicker');
+    avatars.forEach((av, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'av-btn' + (i === 0 ? ' active' : '');
+      btn.textContent = av;
+      btn.onclick = () => {
+        document.querySelectorAll('.av-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedAvatar = av;
+      };
+      picker.appendChild(btn);
+    });
+
+    // Create room
+    let generatedRoom = null;
+    document.getElementById('createBtn').addEventListener('click', async () => {
+      const name = document.getElementById('userName').value.trim();
+      if (!name) {
+        document.getElementById('userName').focus();
+        document.getElementById('userName').style.borderColor = 'var(--rose)';
+        return;
+      }
+      // Generate room ID client-side (will be validated by server)
+      const roomId = Math.random().toString(36).substr(2,8) + Math.random().toString(36).substr(2,8);
+      const link = window.location.origin + '/room/' + roomId;
+      generatedRoom = { roomId, name, avatar: selectedAvatar, link };
+      document.getElementById('linkUrl').textContent = link;
+      document.getElementById('linkBox').classList.add('show');
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      if (!generatedRoom) return;
+      navigator.clipboard.writeText(generatedRoom.link).then(() => {
+        document.getElementById('copyBtn').textContent = '✅ Copied!';
+        setTimeout(() => document.getElementById('copyBtn').textContent = '📋 Copy Link', 2000);
+      });
+    });
+
+    document.getElementById('goBtn').addEventListener('click', () => {
+      if (!generatedRoom) return;
+      const params = new URLSearchParams({ name: generatedRoom.name, avatar: generatedRoom.avatar });
+      window.location.href = '/room/' + generatedRoom.roomId + '?' + params;
+    });
+
+    // Mockup animation
+    const mockupData = [
+      { type: 'in',  text: '💕 Happy Valentine\'s Day!', delay: 500 },
+      { type: 'out', text: 'Happy Valentine\'s Day to you too! 🥰', delay: 1800 },
+      { type: 'in',  text: 'I\'ve been thinking about you all day...', delay: 3200 },
+      { type: 'out', text: 'Me too! ❤️ What are you doing tonight?', delay: 4600 },
+      { type: 'in',  text: 'I\'m chatting with my favourite person 🌹', delay: 6000 },
+    ];
+    const msgs = document.getElementById('mockupMsgs');
+    function addMockMsg(data) {
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.flexDirection = 'column';
+      wrap.style.alignItems = data.type === 'out' ? 'flex-end' : 'flex-start';
+      const msg = document.createElement('div');
+      msg.className = 'mockup-msg msg-' + data.type;
+      msg.textContent = data.text;
+      const time = document.createElement('div');
+      time.className = 'msg-time';
+      const now = new Date();
+      time.textContent = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + (data.type==='out' ? '  ✓✓' : '');
+      time.style.color = data.type==='out' ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.35)';
+      msg.appendChild(time);
+      wrap.appendChild(msg);
+      msgs.appendChild(wrap);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+    mockupData.forEach((d, i) => {
+      setTimeout(() => {
+        addMockMsg(d);
+        if (i === mockupData.length - 1) {
+          setTimeout(() => { msgs.innerHTML = ''; mockupData.forEach((d2, j) => setTimeout(() => addMockMsg(d2), d2.delay)); }, 3000);
+        }
+      }, d.delay);
+    });
+  </script>
+</body>
+</html>

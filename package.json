@@ -1,0 +1,19 @@
+{
+  "name": "valentines-chat",
+  "version": "1.0.0",
+  "description": "A stunning, real-time private 1-on-1 chat app built for Valentine's Day. WhatsApp/Instagram-level UI with all the features you need.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3",
+    "uuid": "^13.0.0"
+  }
+}
