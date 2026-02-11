@@ -12,26 +12,19 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' }
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store active rooms: roomId -> { users: [socketId], userCount }
 const rooms = new Map();
-// Store user data: socketId -> { name, roomId, avatar }
 const users = new Map();
 
 app.get('/room/:roomId', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'chat.html'));
 });
-
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-// Generate a new private room link
 app.get('/api/create-room', (req, res) => {
   const roomId = uuidv4().split('-')[0] + uuidv4().split('-')[0];
   res.json({ roomId, link: `/room/${roomId}` });
@@ -40,80 +33,76 @@ app.get('/api/create-room', (req, res) => {
 io.on('connection', (socket) => {
   console.log(`[+] Socket connected: ${socket.id}`);
 
-  // User joins a room
   socket.on('join-room', ({ roomId, userName, avatar }) => {
-    const room = rooms.get(roomId) || { users: [], userCount: 0 };
+    const room = rooms.get(roomId) || {
+      users: [], userCount: 0,
+      musicState: { trackIndex: 0, playing: false, time: 0, updatedAt: Date.now() }
+    };
+    if (room.users.length >= 2) { socket.emit('room-full'); return; }
 
-    // Prevent 3rd user from joining
-    if (room.users.length >= 2) {
-      socket.emit('room-full');
-      return;
-    }
-
-    // Join the socket.io room
     socket.join(roomId);
     room.users.push(socket.id);
     room.userCount = room.users.length;
     rooms.set(roomId, room);
-
     users.set(socket.id, { name: userName, roomId, avatar });
 
-    // Tell this user about room status
     socket.emit('joined-room', {
-      roomId,
-      userCount: room.users.length,
-      isAlone: room.users.length === 1
+      roomId, userCount: room.users.length,
+      isAlone: room.users.length === 1, musicState: room.musicState
     });
+    socket.to(roomId).emit('partner-joined', { name: userName, avatar, userCount: room.users.length });
 
-    // Notify the other user someone joined
-    socket.to(roomId).emit('partner-joined', {
-      name: userName,
-      avatar,
-      userCount: room.users.length
-    });
-
-    // Tell THIS new user about existing partner
     if (room.users.length === 2) {
       const partnerSocketId = room.users.find(id => id !== socket.id);
       const partner = users.get(partnerSocketId);
       if (partner) {
-        socket.emit('partner-already-here', {
-          name: partner.name,
-          avatar: partner.avatar
-        });
+        socket.emit('partner-already-here', { name: partner.name, avatar: partner.avatar });
+        socket.emit('music-sync', { ...room.musicState, elapsed: (Date.now() - room.musicState.updatedAt) / 1000 });
       }
     }
-
     console.log(`[Room ${roomId}] ${userName} joined (${room.users.length}/2 users)`);
   });
 
-  // Relay chat messages
   socket.on('send-message', ({ roomId, message, timestamp, msgId }) => {
     const user = users.get(socket.id);
     if (!user) return;
-    socket.to(roomId).emit('receive-message', {
-      from: user.name,
-      avatar: user.avatar,
-      message,
-      timestamp,
-      msgId,
-      socketId: socket.id
-    });
+    socket.to(roomId).emit('receive-message', { from: user.name, avatar: user.avatar, message, timestamp, msgId, socketId: socket.id });
   });
 
-  // Typing indicator
   socket.on('typing', ({ roomId, isTyping }) => {
     const user = users.get(socket.id);
     if (!user) return;
     socket.to(roomId).emit('partner-typing', { isTyping, name: user.name });
   });
 
-  // Message seen (double checkmark)
   socket.on('message-seen', ({ roomId, msgId }) => {
     socket.to(roomId).emit('message-seen', { msgId });
   });
 
-  // Handle disconnect
+  // Music sync
+  socket.on('music-control', ({ roomId, trackIndex, playing, currentTime }) => {
+    const room = rooms.get(roomId);
+    if (!room) return;
+    room.musicState = { trackIndex, playing, time: currentTime, updatedAt: Date.now() };
+    rooms.set(roomId, room);
+    socket.to(roomId).emit('music-sync', { trackIndex, playing, time: currentTime, elapsed: 0 });
+  });
+
+  // WebRTC signaling
+  socket.on('call-request', ({ roomId }) => {
+    const user = users.get(socket.id);
+    if (!user) return;
+    socket.to(roomId).emit('call-incoming', { from: user.name, avatar: user.avatar });
+  });
+  socket.on('call-accepted', ({ roomId }) => { socket.to(roomId).emit('call-accepted'); });
+  socket.on('call-rejected', ({ roomId }) => { socket.to(roomId).emit('call-rejected'); });
+  socket.on('call-ended',    ({ roomId }) => { socket.to(roomId).emit('call-ended'); });
+  socket.on('video-offer',   ({ roomId, offer })     => { socket.to(roomId).emit('video-offer',   { offer, from: socket.id }); });
+  socket.on('video-answer',  ({ roomId, answer })    => { socket.to(roomId).emit('video-answer',  { answer }); });
+  socket.on('ice-candidate', ({ roomId, candidate }) => { socket.to(roomId).emit('ice-candidate', { candidate }); });
+  socket.on('toggle-video',  ({ roomId, enabled })   => { socket.to(roomId).emit('remote-toggle-video', { enabled }); });
+  socket.on('toggle-audio',  ({ roomId, enabled })   => { socket.to(roomId).emit('remote-toggle-audio', { enabled }); });
+
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (user) {
@@ -122,13 +111,8 @@ io.on('connection', (socket) => {
       if (room) {
         room.users = room.users.filter(id => id !== socket.id);
         room.userCount = room.users.length;
-        if (room.users.length === 0) {
-          rooms.delete(roomId);
-        } else {
-          rooms.set(roomId, room);
-          // Notify remaining user
-          io.to(roomId).emit('partner-left', { name });
-        }
+        if (room.users.length === 0) { rooms.delete(roomId); }
+        else { rooms.set(roomId, room); io.to(roomId).emit('partner-left', { name }); io.to(roomId).emit('call-ended'); }
       }
       users.delete(socket.id);
       console.log(`[-] ${name} disconnected from room ${roomId}`);
@@ -137,6 +121,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`\n💝 Valentine's Chat Server running at http://localhost:${PORT}\n`);
-});
+server.listen(PORT, () => { console.log(`\n💝 Valentine's Chat running at http://localhost:${PORT}\n`); });
