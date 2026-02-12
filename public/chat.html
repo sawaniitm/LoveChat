@@ -552,10 +552,7 @@ bgMusic.addEventListener('pause', () => {
 
 // Music control functions
 function toggleMusicPlayback() {
-  if (!isMusicLeader) {
-    showToast('Only the room creator can control music');
-    return;
-  }
+  
   
   if (musicPlaying) {
     bgMusic.pause();
@@ -611,28 +608,19 @@ function applyMusicSync({ trackIndex, playing, time, elapsed, currentTime }) {
 
 // Music control button handlers
 document.getElementById('playPauseBtn').onclick = () => {
-  if (!isMusicLeader) {
-    showToast('Only the room creator can control music');
-    return;
-  }
+ 
   toggleMusicPlayback();
 };
 
 document.getElementById('prevTrackBtn').onclick = () => {
-  if (!isMusicLeader) {
-    showToast('Only the room creator can control music');
-    return;
-  }
+ 
   currentTrack = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
   loadTrack(currentTrack, musicPlaying, 0);
   broadcastMusicState();
 };
 
 document.getElementById('nextTrackBtn').onclick = () => {
-  if (!isMusicLeader) {
-    showToast('Only the room creator can control music');
-    return;
-  }
+  
   currentTrack = (currentTrack + 1) % TRACKS.length;
   loadTrack(currentTrack, musicPlaying, 0);
   broadcastMusicState();
@@ -672,10 +660,7 @@ document.getElementById('musicVolBtn').onclick = () => {
 
 // Progress bar click to seek
 document.getElementById('musicProgress').onclick = (e) => {
-  if (!isMusicLeader) {
-    showToast('Only the room creator can control music');
-    return;
-  }
+  
   
   const rect = e.currentTarget.getBoundingClientRect();
   const percent = (e.clientX - rect.left) / rect.width;
