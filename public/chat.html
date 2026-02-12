@@ -505,6 +505,10 @@ function updatePlayBtn() {
   if (icon) {
     icon.setAttribute('data-feather', musicPlaying ? 'pause' : 'play');
     feather.replace();
+  } else {
+    // If no icon exists, create it
+    btn.innerHTML = `<i data-feather="${musicPlaying ? 'pause' : 'play'}"></i>`;
+    feather.replace();
   }
 }
 
@@ -548,7 +552,7 @@ bgMusic.addEventListener('pause', () => {
 
 // Music control functions
 function toggleMusicPlayback() {
-  if (isMusicLeader) {
+  if (!isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -573,21 +577,24 @@ function toggleMusicPlayback() {
 }
 
 // Apply synced music state from server
-function applyMusicSync({ trackIndex, playing, time, elapsed }) {
-  console.log('Applying music sync:', { trackIndex, playing, time, elapsed });
+function applyMusicSync({ trackIndex, playing, time, elapsed, currentTime }) {
+  console.log('Applying music sync:', { trackIndex, playing, time, elapsed, currentTime });
   
-  const adjustedTime = (time || 0) + (elapsed || 0);
+  // Handle both formats: time+elapsed or currentTime
+  const adjustedTime = currentTime !== undefined ? currentTime : ((time || 0) + (elapsed || 0));
   currentTrack = trackIndex;
   musicPlaying = playing;
   
   loadTrack(trackIndex, false, adjustedTime);
   
   if (playing && musicEnabled) {
-    bgMusic.play().catch(err => {
-      console.error('Sync play failed:', err);
-      musicPlaying = false;
-      updatePlayBtn();
-    });
+    setTimeout(() => {
+      bgMusic.play().catch(err => {
+        console.error('Sync play failed:', err);
+        musicPlaying = false;
+        updatePlayBtn();
+      });
+    }, 100); // Small delay to ensure track is loaded
   } else {
     bgMusic.pause();
   }
@@ -603,10 +610,16 @@ function applyMusicSync({ trackIndex, playing, time, elapsed }) {
 }
 
 // Music control button handlers
-document.getElementById('playPauseBtn').onclick = toggleMusicPlayback;
+document.getElementById('playPauseBtn').onclick = () => {
+  if (!isMusicLeader) {
+    showToast('Only the room creator can control music');
+    return;
+  }
+  toggleMusicPlayback();
+};
 
 document.getElementById('prevTrackBtn').onclick = () => {
-  if (isMusicLeader) {
+  if (!isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -616,7 +629,7 @@ document.getElementById('prevTrackBtn').onclick = () => {
 };
 
 document.getElementById('nextTrackBtn').onclick = () => {
-  if (isMusicLeader) {
+  if (!isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -646,16 +659,20 @@ document.getElementById('musicToggleBtn').onclick = () => {
 document.getElementById('musicVolBtn').onclick = () => {
   isMusicMuted = !isMusicMuted;
   bgMusic.volume = isMusicMuted ? 0 : 0.3;
-  const icon = document.querySelector('#musicVolBtn i');
+  const volBtn = document.getElementById('musicVolBtn');
+  const icon = volBtn.querySelector('i');
   if (icon) {
     icon.setAttribute('data-feather', isMusicMuted ? 'volume-x' : 'volume-2');
+    feather.replace();
+  } else {
+    volBtn.innerHTML = `<i data-feather="${isMusicMuted ? 'volume-x' : 'volume-2'}"></i>`;
     feather.replace();
   }
 };
 
 // Progress bar click to seek
 document.getElementById('musicProgress').onclick = (e) => {
-  if (isMusicLeader) {
+  if (!isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -697,9 +714,15 @@ function playRingSound() {
 
 function toggleMute() {
   isMuted = !isMuted;
-  const icon = document.querySelector('#muteBtn i');
-  icon.setAttribute('data-feather', isMuted ? 'volume-x' : 'volume-2');
-  feather.replace();
+  const muteBtn = document.getElementById('muteBtn');
+  const icon = muteBtn.querySelector('i');
+  if (icon) {
+    icon.setAttribute('data-feather', isMuted ? 'volume-x' : 'volume-2');
+    feather.replace();
+  } else {
+    muteBtn.innerHTML = `<i data-feather="${isMuted ? 'volume-x' : 'volume-2'}"></i>`;
+    feather.replace();
+  }
   showToast(isMuted ? '🔇 Notifications muted' : '🔊 Notifications on');
 }
 
@@ -792,7 +815,7 @@ const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { ur
 async function getLocalStream() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } },
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     });
     document.getElementById('localVideo').srcObject = localStream;
@@ -803,11 +826,11 @@ async function getLocalStream() {
   } catch(e) {
     try {
       localStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
       document.getElementById('localVideo').srcObject = localStream;
-      showToast('📹 Using 480p');
+      showToast('📹 Using 720p');
       return true;
     } catch(e2) {
       try {
@@ -827,7 +850,7 @@ async function switchCamera() {
   if (videoTrack) videoTrack.stop();
   try {
     const newStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } },
       audio: false
     });
     const newVideoTrack = newStream.getVideoTracks()[0];
@@ -946,9 +969,14 @@ document.getElementById('toggleCamBtn').addEventListener('click', () => {
   if (!localStream) return;
   const vid = localStream.getVideoTracks()[0];
   if (vid) { camEnabled = !camEnabled; vid.enabled = camEnabled; }
-  const icon = document.querySelector('#toggleCamBtn i');
-  icon.setAttribute('data-feather', camEnabled ? 'video' : 'video-off');
-  document.getElementById('toggleCamBtn').classList.toggle('off', !camEnabled);
+  const camBtn = document.getElementById('toggleCamBtn');
+  const icon = camBtn.querySelector('i');
+  if (icon) {
+    icon.setAttribute('data-feather', camEnabled ? 'video' : 'video-off');
+  } else {
+    camBtn.innerHTML = `<i data-feather="${camEnabled ? 'video' : 'video-off'}"></i>`;
+  }
+  camBtn.classList.toggle('off', !camEnabled);
   socket.emit('toggle-video', { roomId, enabled: camEnabled });
   feather.replace();
 });
@@ -959,9 +987,14 @@ document.getElementById('toggleMicBtn').addEventListener('click', () => {
   if (!localStream) return;
   const aud = localStream.getAudioTracks()[0];
   if (aud) { micEnabled = !micEnabled; aud.enabled = micEnabled; }
-  const icon = document.querySelector('#toggleMicBtn i');
-  icon.setAttribute('data-feather', micEnabled ? 'mic' : 'mic-off');
-  document.getElementById('toggleMicBtn').classList.toggle('off', !micEnabled);
+  const micBtn = document.getElementById('toggleMicBtn');
+  const icon = micBtn.querySelector('i');
+  if (icon) {
+    icon.setAttribute('data-feather', micEnabled ? 'mic' : 'mic-off');
+  } else {
+    micBtn.innerHTML = `<i data-feather="${micEnabled ? 'mic' : 'mic-off'}"></i>`;
+  }
+  micBtn.classList.toggle('off', !micEnabled);
   socket.emit('toggle-audio', { roomId, enabled: micEnabled });
   feather.replace();
 });
@@ -1128,6 +1161,19 @@ function initSocket() {
 
   socket.on('music-sync', (data) => {
     console.log('Received music sync:', data);
+    if (isMusicLeader) {
+      console.log('Ignoring sync - I am the leader');
+      return; // Leader doesn't sync to followers
+    }
+    applyMusicSync(data);
+  });
+
+  socket.on('music-control', (data) => {
+    console.log('Received music control:', data);
+    if (isMusicLeader) {
+      console.log('Ignoring control - I am the leader');
+      return; // Leader doesn't listen to control messages
+    }
     applyMusicSync(data);
   });
 
