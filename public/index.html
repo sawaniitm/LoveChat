@@ -107,6 +107,12 @@
       font-weight: 700;
       color: var(--rose);
       display: flex; align-items: center; gap: 8px;
+      
+    }
+    .nav-logo a {
+      text-decoration: none;
+      color: var(--rose);
+      transition: color 0.2s;
     }
     .nav-logo span { font-size: 26px; }
     .nav-links { display: flex; gap: 32px; align-items: center; }
@@ -526,8 +532,8 @@
       transition: transform 0.2s, opacity 0.2s;
     }
     .btn-small:hover { transform: translateY(-1px); opacity: 0.9; }
-    .btn-copy { background: var(--rose); color: #fff; cursor: pointer; }
-    .btn-go { background: var(--text); color: #fff;  cursor: pointer;}
+    .btn-copy { background: var(--rose); color: #fff; cursor: pointer;}
+    .btn-go { background: var(--text); color: #fff; cursor: pointer;}
 
     /* LINK MODAL POPUP */
     .link-modal {
@@ -536,7 +542,7 @@
       padding: 24px;
       cursor: pointer;
     }
-    .link-modal.show { display: flex; cursor: pointer;}
+    .link-modal.show { display: flex;  cursor: pointer;}
     .link-modal-overlay {
       position: absolute; inset: 0;
       background: rgba(13,0,20,0.92);
@@ -553,7 +559,6 @@
       box-shadow: 0 40px 100px rgba(255,51,102,0.3), 0 0 0 1px rgba(255,51,102,0.1);
       animation: modalSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
       cursor: pointer;
-      
     }
     @keyframes modalSlideUp {
       from { opacity: 0; transform: translateY(40px) scale(0.9); }
@@ -588,6 +593,7 @@
     .close-modal-btn:hover {
       background: rgba(255,51,102,0.05);
       border-color: var(--rose);
+      cursor: pointer;
     }
 
     /* TESTIMONIALS */
@@ -674,7 +680,7 @@
   <nav>
     <div class="nav-logo">
       <span>💝</span>
-      LoveChat
+      <a href="#">LoveChat</a>     
     </div>
     <div class="nav-links">
       <a href="#how-it-works" class="hide-mobile">How it works</a>
@@ -792,21 +798,6 @@
           <span class="feat-icon">🕒</span>
           <h4>Timestamps</h4>
           <p>Every message shows a precise time so your conversation has a beautiful timeline.</p>
-        </div>
-        <div class="feat-card reveal">
-          <span class="feat-icon">📹</span>
-          <h4>Video Calls</h4>
-          <p>Make video calls directly in the chat with your Valentine.</p>
-        </div>
-        <div class="feat-card reveal">
-          <span class="feat-icon">🎵</span>
-          <h4>Music Sharing</h4>
-          <p>Share your favorite songs and playlists with your Valentine in real time.</p>
-        </div>
-        <div class="feat-card reveal">
-          <span class="feat-icon">🗃️</span>
-          <h4>Personalized Invite</h4>
-          <p>Customize your chat invite with a special message and theme for your Valentine.</p>
         </div>
       </div>
     </div>
@@ -1033,12 +1024,7 @@
 
     document.getElementById('copyBtn').addEventListener('click', () => {
       if (!generatedRoom) return;
-      const textToCopy = `Will you be my Valentine? 💖
-I found this cute secret chat app and thought of you…  
-Come join me, I’m waiting 😍😉  
-
-${generatedRoom.link}`;
-      navigator.clipboard.writeText(textToCopy).then(() => {
+      navigator.clipboard.writeText(generatedRoom.link).then(() => {
         document.getElementById('copyBtn').textContent = '✅ Copied!';
         setTimeout(() => document.getElementById('copyBtn').textContent = '📋 Copy Link', 2000);
       });
@@ -1054,7 +1040,7 @@ ${generatedRoom.link}`;
     document.getElementById('closeModalBtn').addEventListener('click', () => {
       document.getElementById('linkModal').classList.remove('show');
     });
- 
+  
 
     // Mockup animation
     const mockupData = [
