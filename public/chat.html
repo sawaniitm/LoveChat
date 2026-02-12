@@ -615,7 +615,8 @@ document.getElementById('playPauseBtn').onclick = () => {
     showToast('Only the room creator can control music');
     return;
   }
-  currentTrack = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
+  toggleMusicPlayback();
+   currentTrack = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
   loadTrack(currentTrack, musicPlaying, 0);
   broadcastMusicState();
 };
