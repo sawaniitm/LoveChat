@@ -548,7 +548,7 @@ bgMusic.addEventListener('pause', () => {
 
 // Music control functions
 function toggleMusicPlayback() {
-  if (!isMusicLeader) {
+  if (isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -606,7 +606,7 @@ function applyMusicSync({ trackIndex, playing, time, elapsed }) {
 document.getElementById('playPauseBtn').onclick = toggleMusicPlayback;
 
 document.getElementById('prevTrackBtn').onclick = () => {
-  if (!isMusicLeader) {
+  if (isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -616,7 +616,7 @@ document.getElementById('prevTrackBtn').onclick = () => {
 };
 
 document.getElementById('nextTrackBtn').onclick = () => {
-  if (!isMusicLeader) {
+  if (isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -655,7 +655,7 @@ document.getElementById('musicVolBtn').onclick = () => {
 
 // Progress bar click to seek
 document.getElementById('musicProgress').onclick = (e) => {
-  if (!isMusicLeader) {
+  if (isMusicLeader) {
     showToast('Only the room creator can control music');
     return;
   }
@@ -792,7 +792,7 @@ const iceServers = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { ur
 async function getLocalStream() {
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } },
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     });
     document.getElementById('localVideo').srcObject = localStream;
@@ -803,11 +803,11 @@ async function getLocalStream() {
   } catch(e) {
     try {
       localStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+        video: { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
       });
       document.getElementById('localVideo').srcObject = localStream;
-      showToast('📹 Using 720p');
+      showToast('📹 Using 480p');
       return true;
     } catch(e2) {
       try {
@@ -827,7 +827,7 @@ async function switchCamera() {
   if (videoTrack) videoTrack.stop();
   try {
     const newStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } },
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
       audio: false
     });
     const newVideoTrack = newStream.getVideoTracks()[0];
