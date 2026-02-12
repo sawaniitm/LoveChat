@@ -44,9 +44,9 @@
     .partner-status{font-size:11px;color:var(--muted);height:16px;overflow:hidden;}
     .partner-status.online-text{color:#4ADE80;}
     .header-actions{display:flex;gap:6px;}
-    .hdr-btn{width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .15s;}
-    .hdr-btn:hover{background:rgba(255,255,255,.1);color:var(--text);transform:scale(1.08); font-weight: bold;}
-    .hdr-btn.active{background:rgba(255,51,102,.2);color:var(--rose); font-weight: bold;}
+    .hdr-btn{width:36px;height:36px;border-radius:50%;border:none;background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s,color .2s,transform .15s; font-weight: bold;}
+    .hdr-btn:hover{background:rgba(255,255,255,.1);color:var(--text);transform:scale(1.08);}
+    .hdr-btn.active{background:rgba(255,51,102,.2);color:var(--rose);}
     .hdr-btn.video-active{background:linear-gradient(135deg,var(--rose),#FF1744);color:#fff;box-shadow:0 4px 16px rgba(255,51,102,.4);}
     .hdr-btn svg{width:18px;height:18px;}
 
@@ -329,7 +329,7 @@
   </div>
 
   <div class="music-bar hidden" id="musicBar">
-    <span class="music-note-anim">🎵</span>
+    <span class="music-note-anim" id="musicNoteIcon">🎵</span>
     <div class="music-info">
       <div class="music-title" id="musicTitle">Loading...</div>
       <div class="music-artist" id="musicArtist">Valentine's Playlist</div>
@@ -437,8 +437,7 @@ function spawnVideoHeart() {
 }
 
 // ════════════════════════════════════════════════════════
-//  ROMANTIC MUSIC PLAYER (LOCAL FILES)
-//  Place your MP3 files in public/music/ folder
+//  ROMANTIC MUSIC PLAYER - FIXED VERSION
 // ════════════════════════════════════════════════════════
 const TRACKS = [
   { title: 'Ab Jo Mile', artist: 'Vishal Mishra & Sachin-Jigar', src: '/music/Ab Jo Mile.mp3' },
@@ -446,45 +445,71 @@ const TRACKS = [
 
 let currentTrack = 0;
 let musicPlaying = false;
-let isMusicLeader = false; // creator controls music, guest follows
+let isMusicLeader = false;
 const bgMusic = document.getElementById('bgMusic');
-bgMusic.volume = 0.01;
+bgMusic.volume = 0.3; // Increased from 0.01 for audible playback
 
-// Try to load track, fallback to next if error
+// Load track with error handling
 function loadTrack(idx, autoPlay = false, startTime = 0) {
-  if (idx >= TRACKS.length) { idx = 0; }
+  if (idx >= TRACKS.length) idx = 0;
+  if (idx < 0) idx = TRACKS.length - 1;
+  
   currentTrack = idx;
   const track = TRACKS[idx];
+  
+  // Reset error handler first
+  bgMusic.onerror = null;
+  
   bgMusic.src = track.src;
   bgMusic.currentTime = startTime;
+  
   document.getElementById('musicTitle').textContent = track.title;
   document.getElementById('musicArtist').textContent = track.artist;
   document.getElementById('musicNoteIcon').textContent = '🎵';
   
-  // Handle if file doesn't exist — skip to next
+  // Handle loading errors
   bgMusic.onerror = () => {
-    console.warn(`Track ${idx} not found, trying next...`);
-    if (autoPlay && idx < TRACKS.length - 1) {
-      loadTrack(idx + 1, autoPlay, 0);
-    } else if (idx === TRACKS.length - 1) {
-      // All tracks failed, show message
-      document.getElementById('musicTitle').textContent = 'No music files found';
-      document.getElementById('musicArtist').textContent = 'Place MP3s in public/music/';
-      document.getElementById('musicNoteIcon').textContent = '⚠️';
+    console.warn(`Track ${idx} failed to load`);
+    document.getElementById('musicTitle').textContent = 'Track unavailable';
+    document.getElementById('musicArtist').textContent = 'Check /music/ folder';
+    document.getElementById('musicNoteIcon').textContent = '⚠️';
+  };
+  
+  // Handle successful load
+  bgMusic.oncanplaythrough = () => {
+    console.log('Track loaded successfully');
+    if (autoPlay && musicEnabled) {
+      bgMusic.play().catch(err => {
+        console.error('Autoplay failed:', err);
+        musicPlaying = false;
+        updatePlayBtn();
+      });
     }
   };
   
-  if (autoPlay) bgMusic.play().catch(() => {});
+  if (autoPlay && musicEnabled) {
+    musicPlaying = true;
+    bgMusic.play().catch(err => {
+      console.error('Play failed:', err);
+      musicPlaying = false;
+      updatePlayBtn();
+    });
+  }
+  
   updatePlayBtn();
 }
 
 function updatePlayBtn() {
   const btn = document.getElementById('playPauseBtn');
-  btn.textContent = musicPlaying ? '⏸' : '▶';
+  const icon = btn.querySelector('i');
+  if (icon) {
+    icon.setAttribute('data-feather', musicPlaying ? 'pause' : 'play');
+    feather.replace();
+  }
 }
 
 function updateMusicProgress() {
-  if (!bgMusic.duration) return;
+  if (!bgMusic.duration || isNaN(bgMusic.duration)) return;
   const pct = (bgMusic.currentTime / bgMusic.duration) * 100;
   document.getElementById('musicProgressFill').style.width = pct + '%';
 }
@@ -492,87 +517,156 @@ function updateMusicProgress() {
 function broadcastMusicState() {
   if (!socket || !isMusicLeader) return;
   socket.emit('music-control', {
-    roomId, trackIndex: currentTrack,
-    playing: musicPlaying, currentTime: bgMusic.currentTime
+    roomId,
+    trackIndex: currentTrack,
+    playing: musicPlaying,
+    currentTime: bgMusic.currentTime || 0
   });
 }
 
+// Music event listeners
 bgMusic.addEventListener('timeupdate', updateMusicProgress);
-bgMusic.addEventListener('ended', () => {
-  currentTrack = (currentTrack + 1) % TRACKS.length;
-  loadTrack(currentTrack, true, 0);
-  if (isMusicLeader) broadcastMusicState();
-});
 
-function startMusic() {
-  musicEnabled = true;
-  document.getElementById('musicBar').classList.remove('hidden');
-  document.getElementById('musicToggleBtn').classList.add('active');
+bgMusic.addEventListener('ended', () => {
+  console.log('Track ended, moving to next');
+  currentTrack = (currentTrack + 1) % TRACKS.length;
+  loadTrack(currentTrack, musicPlaying, 0);
   if (isMusicLeader) {
-    loadTrack(0, true, 0);
-    musicPlaying = true;
-    updatePlayBtn();
     broadcastMusicState();
   }
-}
+});
 
+bgMusic.addEventListener('play', () => {
+  musicPlaying = true;
+  updatePlayBtn();
+});
+
+bgMusic.addEventListener('pause', () => {
+  musicPlaying = false;
+  updatePlayBtn();
+});
+
+// Music control functions
 function toggleMusicPlayback() {
-  if (!isMusicLeader) return; // only leader controls
-  if (musicPlaying) {
-    bgMusic.pause(); musicPlaying = false;
-  } else {
-    bgMusic.play().catch(() => {}); musicPlaying = true;
+  if (!isMusicLeader) {
+    showToast('Only the room creator can control music');
+    return;
   }
+  
+  if (musicPlaying) {
+    bgMusic.pause();
+    musicPlaying = false;
+  } else {
+    bgMusic.play().then(() => {
+      musicPlaying = true;
+      updatePlayBtn();
+    }).catch(err => {
+      console.error('Play failed:', err);
+      showToast('❌ Playback failed');
+      musicPlaying = false;
+      updatePlayBtn();
+    });
+  }
+  
   updatePlayBtn();
   broadcastMusicState();
 }
-
-document.getElementById('playPauseBtn').onclick = toggleMusicPlayback;
-document.getElementById('prevTrackBtn').onclick = () => {
-  if (!isMusicLeader) return;
-  currentTrack = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
-  loadTrack(currentTrack, musicPlaying, 0);
-  broadcastMusicState();
-};
-document.getElementById('nextTrackBtn').onclick = () => {
-  if (!isMusicLeader) return;
-  currentTrack = (currentTrack + 1) % TRACKS.length;
-  loadTrack(currentTrack, musicPlaying, 0);
-  broadcastMusicState();
-};
-document.getElementById('musicToggleBtn').onclick = () => {
-  musicEnabled = !musicEnabled;
-  const bar = document.getElementById('musicBar');
-  const btn = document.getElementById('musicToggleBtn');
-  if (musicEnabled) {
-    bar.classList.remove('hidden'); btn.classList.add('active');
-    if (musicPlaying && bgMusic.src) bgMusic.play().catch(() => {});
-  } else {
-    bar.classList.add('hidden'); btn.classList.remove('active');
-    bgMusic.pause();
-  }
-};
-document.getElementById('musicVolBtn').onclick = () => {
-  isMusicMuted = !isMusicMuted;
-  bgMusic.volume = isMusicMuted ? 0 : 0.01;
-  document.getElementById('musicVolBtn').textContent = isMusicMuted ? '🔇' : '🔊';
-};
 
 // Apply synced music state from server
 function applyMusicSync({ trackIndex, playing, time, elapsed }) {
+  console.log('Applying music sync:', { trackIndex, playing, time, elapsed });
+  
   const adjustedTime = (time || 0) + (elapsed || 0);
   currentTrack = trackIndex;
   musicPlaying = playing;
+  
   loadTrack(trackIndex, false, adjustedTime);
-  if (playing) { bgMusic.play().catch(() => {}); }
-  else { bgMusic.pause(); }
+  
+  if (playing && musicEnabled) {
+    bgMusic.play().catch(err => {
+      console.error('Sync play failed:', err);
+      musicPlaying = false;
+      updatePlayBtn();
+    });
+  } else {
+    bgMusic.pause();
+  }
+  
   updatePlayBtn();
+  
+  // Show music bar if not already visible
   if (!musicEnabled) {
     musicEnabled = true;
     document.getElementById('musicBar').classList.remove('hidden');
     document.getElementById('musicToggleBtn').classList.add('active');
   }
 }
+
+// Music control button handlers
+document.getElementById('playPauseBtn').onclick = toggleMusicPlayback;
+
+document.getElementById('prevTrackBtn').onclick = () => {
+  if (!isMusicLeader) {
+    showToast('Only the room creator can control music');
+    return;
+  }
+  currentTrack = (currentTrack - 1 + TRACKS.length) % TRACKS.length;
+  loadTrack(currentTrack, musicPlaying, 0);
+  broadcastMusicState();
+};
+
+document.getElementById('nextTrackBtn').onclick = () => {
+  if (!isMusicLeader) {
+    showToast('Only the room creator can control music');
+    return;
+  }
+  currentTrack = (currentTrack + 1) % TRACKS.length;
+  loadTrack(currentTrack, musicPlaying, 0);
+  broadcastMusicState();
+};
+
+document.getElementById('musicToggleBtn').onclick = () => {
+  musicEnabled = !musicEnabled;
+  const bar = document.getElementById('musicBar');
+  const btn = document.getElementById('musicToggleBtn');
+  
+  if (musicEnabled) {
+    bar.classList.remove('hidden');
+    btn.classList.add('active');
+    if (musicPlaying && bgMusic.src) {
+      bgMusic.play().catch(err => console.error('Toggle play failed:', err));
+    }
+  } else {
+    bar.classList.add('hidden');
+    btn.classList.remove('active');
+    bgMusic.pause();
+  }
+};
+
+document.getElementById('musicVolBtn').onclick = () => {
+  isMusicMuted = !isMusicMuted;
+  bgMusic.volume = isMusicMuted ? 0 : 0.3;
+  const icon = document.querySelector('#musicVolBtn i');
+  if (icon) {
+    icon.setAttribute('data-feather', isMusicMuted ? 'volume-x' : 'volume-2');
+    feather.replace();
+  }
+};
+
+// Progress bar click to seek
+document.getElementById('musicProgress').onclick = (e) => {
+  if (!isMusicLeader) {
+    showToast('Only the room creator can control music');
+    return;
+  }
+  
+  const rect = e.currentTarget.getBoundingClientRect();
+  const percent = (e.clientX - rect.left) / rect.width;
+  if (bgMusic.duration && !isNaN(bgMusic.duration)) {
+    bgMusic.currentTime = percent * bgMusic.duration;
+    broadcastMusicState();
+  }
+};
 
 
 // Sound
@@ -702,7 +796,6 @@ async function getLocalStream() {
       audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
     });
     document.getElementById('localVideo').srcObject = localStream;
-    // Show flip button on mobile
     if ('mediaDevices' in navigator && navigator.mediaDevices.getSupportedConstraints().facingMode) {
       document.getElementById('flipCamBtn').style.display = 'flex';
     }
@@ -794,7 +887,6 @@ function showVideoCall() {
   document.getElementById('remoteVideo').style.display = 'none';
   document.getElementById('videoCallBtn').classList.add('video-active');
   startCallTimer();
-  // Start floating hearts
   videoHeartInterval = setInterval(spawnVideoHeart, 800);
 }
 
@@ -929,19 +1021,32 @@ function initSocket() {
   socket = io();
 
   socket.on('connect', () => {
+    console.log('Socket connected');
     socket.emit('join-room', { roomId, userName: myName, avatar: myAvatar });
   });
 
   socket.on('joined-room', ({ userCount, isAlone, musicState }) => {
+    console.log('Joined room:', { userCount, isAlone, musicState });
+    
     if (isAlone) {
       document.getElementById('waitingOverlay').classList.remove('hidden');
       document.getElementById('partnerStatus').textContent = 'Waiting...';
+      // Creator becomes music leader
+      isMusicLeader = true;
+      console.log('I am the music leader (creator)');
     } else {
       document.getElementById('waitingOverlay').classList.add('hidden');
+      // Guest receives music sync
+      isMusicLeader = false;
+      console.log('I am a guest, will sync to leader');
+      if (musicState) {
+        applyMusicSync(musicState);
+      }
     }
   });
 
-  socket.on('partner-already-here', ({ name, avatar }) => {
+  socket.on('partner-already-here', ({ name, avatar, musicState }) => {
+    console.log('Partner already here:', { name, avatar, musicState });
     partnerName = name; partnerAvEmoji = avatar;
     document.getElementById('partnerName').textContent = name;
     document.getElementById('partnerAvatar').textContent = avatar;
@@ -951,9 +1056,16 @@ function initSocket() {
     document.getElementById('waitingOverlay').classList.add('hidden');
     addSystemMsg('💕 Both of you are here!');
     playJoinSound();
+    
+    // Guest syncs to creator's music
+    isMusicLeader = false;
+    if (musicState) {
+      applyMusicSync(musicState);
+    }
   });
 
   socket.on('partner-joined', ({ name, avatar }) => {
+    console.log('Partner joined:', { name, avatar });
     partnerName = name; partnerAvEmoji = avatar;
     document.getElementById('partnerName').textContent = name;
     document.getElementById('partnerAvatar').textContent = avatar;
@@ -964,11 +1076,17 @@ function initSocket() {
     addSystemMsg(`💕 ${name} joined`);
     playJoinSound();
     showToast(`💕 ${name} is here!`);
-    // Show music bar (no autoplay)
+    
+    // Show music bar for both users
     document.getElementById('musicBar').classList.remove('hidden');
     document.getElementById('musicToggleBtn').classList.add('active');
     musicEnabled = true;
-    loadTrack(0, false, 0);
+    
+    // If I'm the leader, load first track and broadcast state
+    if (isMusicLeader) {
+      loadTrack(0, false, 0);
+      broadcastMusicState();
+    }
   });
 
   socket.on('partner-left', ({ name }) => {
@@ -1008,7 +1126,10 @@ function initSocket() {
     document.getElementById('ipBlockedOverlay').classList.add('show');
   });
 
-  socket.on('music-sync', (data) => { applyMusicSync(data); });
+  socket.on('music-sync', (data) => {
+    console.log('Received music sync:', data);
+    applyMusicSync(data);
+  });
 
   socket.on('call-incoming', ({ from, avatar, callerId: cid }) => {
     callerId = cid;
